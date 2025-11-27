@@ -2,9 +2,16 @@
 #include <WiFi.h>
 #include <DHT.h> 
 #include <LiquidCrystal.h>
+#include <PubSubClient.h>
 
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
+const char* mqttServer = "test.mosquitto.org";
+int port = 1883;
+
+// Wifi
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 #define DHTPIN 4     
 #define DHTTYPE DHT22
@@ -13,6 +20,9 @@ int mq2_pin = 12;
 int greenLed = 35;
 int redLed = 47;
 int buzzer = 19;
+bool ledBlink = false;
+unsigned long lastMillis = 0;
+//bool switchMode = 0; //chưa dùng
 
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal lcd(41, 40, 39, 38, 37, 36); 
@@ -24,6 +34,23 @@ void wifiConnect() {
     Serial.print(".");
   }
   Serial.println(" Connected!");
+}
+
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.println(topic);
+  String stMessage;
+  for(int i = 0; i < length; i++) {
+    stMessage += (char)message[i];
+  }
+  Serial.println(stMessage);
+  if(String(topic) == "23CLC09N12/Led") {
+    if(stMessage == "true") {
+      ledBlink = true;
+    }
+    else {
+      ledBlink = false;
+    }
+  }
 }
 
 void setup() {
@@ -42,44 +69,48 @@ void setup() {
 
   Serial.print("Connecting to WiFi");
   wifiConnect();
+
+  client.setServer(mqttServer, port);
+  client.setCallback(callback);
+}
+
+void mqttReconnect() {
+  while(!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    if(client.connect("23CLC09N12")) {
+      Serial.println("connected");
+      if(client.subscribe("23CLC09N12/Led")){
+        Serial.println("Kết nối thành công.");
+      }
+      //client.subscribe("23CLC09N12/LOCK");
+    } else {
+      Serial.println(" try again in 5 seconds");
+      delay(3000);
+    }
+  }
 }
 
 void loop() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.print("Reconnecting to WiFi");
-    wifiConnect();
+  if(!client.connected()){
+    mqttReconnect();
   }
-  
-  // code để test
-  delay(2000);
+  client.loop();
 
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
+  unsigned long currentMillis = millis();
+  static bool ledVisible = 0;
+  static unsigned long previousBlinkTime = 0;
 
-  Serial.print(F("Humidity: "));
-  Serial.print(h);
-  Serial.print(F("%  Temperature: "));
-  Serial.print(t);
-  Serial.println(F("°C"));
-
-  int mq2Value = analogRead(mq2_pin);
-  Serial.print("MQ2: ");
-  Serial.println(mq2Value);
-
-  int buttonState = digitalRead(button);
-  if(buttonState == HIGH){
-    Serial.println("Button pressed");
+  if (ledBlink){ 
+    if (currentMillis - previousBlinkTime >= 500){
+      ledVisible = !ledVisible;
+      previousBlinkTime = currentMillis;
+    }
+    digitalWrite(redLed, ledVisible ? HIGH : LOW);
+  }
+  else {
+    digitalWrite(redLed, LOW);
   }
 
-  // digitalWrite(greenLed, HIGH);
-  // digitalWrite(redLed, HIGH);
 
-  // delay(50);
-
-  // digitalWrite(greenLed, LOW);
-  // digitalWrite(redLed, LOW);
-
-  // tone(buzzer, 5000, 200);
-  // delay(1000);
-  // noTone(buzzer);
+  // delay(2000);
 }
