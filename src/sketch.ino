@@ -56,7 +56,6 @@ void callback(char* topic, byte* message, unsigned int length) {
 void setup() {
   Serial.begin(9600);
   
-  pinMode(DHTPIN, INPUT_PULLUP); 
   pinMode(button, INPUT_PULLUP);
   pinMode(mq2_pin, INPUT);
   pinMode(greenLed, OUTPUT);
@@ -64,6 +63,7 @@ void setup() {
   pinMode(buzzer, OUTPUT);
 
   dht.begin();
+  delay(2000);
   lcd.begin(20, 4);
   lcd.print("System Ready!");
 
@@ -90,6 +90,22 @@ void mqttReconnect() {
   }
 }
 
+void publishDHTData() {
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  if(isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  client.publish("23CLC09N12/temperature", String(temperature).c_str());
+  client.publish("23CLC09N12/humidity", String(humidity).c_str());
+
+  Serial.print("Temperature: "); Serial.println(temperature);
+  Serial.print("Humidity: "); Serial.println(humidity);
+}
+
 void loop() {
   if(!client.connected()){
     mqttReconnect();
@@ -111,6 +127,10 @@ void loop() {
     digitalWrite(redLed, LOW);
   }
 
-
+  //2s
+  if(millis() - lastMillis >= 2000) {
+    lastMillis = millis();
+    publishDHTData();
+  }
   // delay(2000);
 }
