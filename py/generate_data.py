@@ -12,7 +12,7 @@ for _ in range(num_samples):
         # NORMAL
         temperature = np.random.uniform(20, 40)   # bình thường
         humidity = np.random.uniform(40, 80)
-        smoke = np.random.uniform(80, 300)        # ppm bình thường
+        smoke = np.random.uniform(3277, 3578)#mq2Value #tương ứng 60-300 ppm
 
     else:
         # FIRE (cháy vừa + cháy mạnh)
@@ -21,12 +21,12 @@ for _ in range(num_samples):
         if fire_type == "medium":  # cháy vừa
             temperature = np.random.uniform(50, 65)
             humidity = np.random.uniform(20, 50)
-            smoke = np.random.uniform(600, 1200)  # ppm cháy nhỏ
+            smoke = np.random.uniform(3693, 3785)  #tương ứng 600 - 1200 ppm
         
         elif fire_type == "strong":  # cháy mạnh
             temperature = np.random.uniform(65, 80)
             humidity = np.random.uniform(10, 30)
-            smoke = np.random.uniform(1200, 10000)  # ppm nguy hiểm
+            smoke = np.random.uniform(3785, 4041)  #tương ứng >1200 ppm
     
     data.append([temperature, humidity, smoke, label])
 

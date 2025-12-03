@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-mean = [36.42070508, 53.82570607, 293.13938522]
-std = [14.25085804, 16.25552982, 221.25996687]
+mean = [36.45518212, 54.09627852, 3502.11820286]
+std  = [14.38166738, 16.25418753, 171.23889855]
 
 # Input raw từ sensor / test
 input_raw = np.array([[25.0, 60.0, 50]], dtype=np.float32)

@@ -3,6 +3,7 @@
 #include <DHT.h> 
 #include <LiquidCrystal.h>
 #include <PubSubClient.h>
+#include <math.h>
 #include "fire_model_data.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -24,19 +25,23 @@ int mq2_pin = 12;
 int greenLed = 35;
 int redLed = 47;
 int buzzer = 19;
+bool toneBuzzer = false;
+bool isBuzzing = false;
 bool ledBlink = false;
 unsigned long lastMillis = 0;
 //bool switchMode = 0; //chưa dùng
+bool isFire = false;
 
 float temperature = 0;
 float humidity = 0;
-float smoke = 500;
+float mq2Value = 0;
+
 
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal lcd(41, 40, 39, 38, 37, 36); 
 
-const float mean[3] = {36.1719094, 54.19577833, 570.52825509};
-const float std_val[3] = {14.1665273, 16.25330416, 1328.76111158};
+const float mean[3] = {36.45518212, 54.09627852, 3502.11820286};
+const float std_val[3] = {14.38166738 , 16.25418753, 171.23889855};
 
 #define TENSOR_ARENA_SIZE 2*1024
 uint8_t tensor_arena[TENSOR_ARENA_SIZE];
@@ -72,7 +77,7 @@ void callback(char* topic, byte* message, unsigned int length) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   pinMode(button, INPUT_PULLUP);
   pinMode(mq2_pin, INPUT);
@@ -119,34 +124,29 @@ void mqttReconnect() {
   }
 }
 
-void publishDHTData() {
-  float temperature = dht.readTemperature();
-  float humidity = dht.readHumidity();
+
+void readPublishSensorsData() {
+  temperature = dht.readTemperature();
+  humidity = dht.readHumidity();
+  mq2Value = analogRead(mq2_pin);
 
   if(isnan(temperature) || isnan(humidity)) {
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
 
+  if (isnan(mq2Value)) {
+    Serial.println("Failed to read from MQ2 sensor!");
+    return;
+  }
+
   client.publish("23CLC09N12/temperature", String(temperature).c_str());
   client.publish("23CLC09N12/humidity", String(humidity).c_str());
+  client.publish("23CLC09N12/MQ2/ppm", String(mq2Value).c_str());
 
   Serial.print("Temperature: "); Serial.println(temperature);
   Serial.print("Humidity: "); Serial.println(humidity);
-}
-
-void publishMQ2Data() {
-  int mq2Value = analogRead(mq2_pin);
-  float ppm = mq2Value * (100000.0 / 4095.0);  // giả lập 0.1 -> 100000 PPM
-
-  if (isnan(mq2Value)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
-  Serial.print("MQ2 ADC: ");
-  Serial.println(mq2Value);
-
-  client.publish("23CLC09N12/MQ2/ppm", String(mq2Value).c_str());
+  Serial.print("MQ2 ADC: "); Serial.println(mq2Value);
 }
 
 void loop() {
@@ -161,10 +161,11 @@ void loop() {
 
   if(currentMillis - lastMillis >= 2000){
     lastMillis = currentMillis;
-    readPublishDHTData();
+    readPublishSensorsData();
+
     // Scale dữ liệu
     float input_scaled[3];
-    float input_raw[3] = {temperature, humidity, smoke};
+    float input_raw[3] = {temperature, humidity, mq2Value};
     for(int i = 0; i < 3; i++){
       input_scaled[i] = (input_raw[i] - mean[i]) / std_val[i];
       input->data.f[i] = input_scaled[i];
@@ -176,8 +177,19 @@ void loop() {
     float pred = output->data.f[0];
     Serial.print("Prediction: ");
     Serial.println(pred);  // gần 0 hoặc 1
+
+    if(pred > 0.5) isFire = true;
+    else isFire = false;
   }
 
+  if(isFire){
+    ledBlink = true;
+    toneBuzzer = true;
+  }
+  else {
+    ledBlink = false;
+    toneBuzzer = false;
+  }
 
   if (ledBlink){ 
     if (currentMillis - previousBlinkTime >= 500){
@@ -190,11 +202,16 @@ void loop() {
     digitalWrite(redLed, LOW);
   }
 
-  //2s
-  if(millis() - lastMillis >= 2000) {
-    lastMillis = millis();
-    publishDHTData();
-    publishMQ2Data();
+  if (toneBuzzer){
+    if(!isBuzzing){ // chỉ bật buzzer nếu isBuzzing == false, nghĩa là buzzer chưa bật
+      tone(buzzer, 5000); 
+      isBuzzing = true;
+    }
   }
-  // delay(2000);
+  else {
+    if (isBuzzing) { // chỉ tắt buzzer nếu isBuzzing == true, nghĩa là buzzer đang bật
+      noTone(buzzer);
+      isBuzzing = false; // Đánh dấu là đã tắt
+    }
+  }
 }
