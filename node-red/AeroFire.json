@@ -108,7 +108,7 @@
     {
         "id": "6ce2b8a87d8c90a7",
         "type": "ui_tab",
-        "name": "AeroFire",
+        "name": "Thông số",
         "icon": "dashboard",
         "disabled": false,
         "hidden": false
@@ -116,7 +116,7 @@
     {
         "id": "af10641eff56d860",
         "type": "ui_group",
-        "name": "Thông số",
+        "name": "",
         "tab": "6ce2b8a87d8c90a7",
         "order": 1,
         "disp": true,
@@ -170,7 +170,7 @@
         "expiry": "",
         "broker": "1b64c79f5eb19485",
         "x": 670,
-        "y": 260,
+        "y": 200,
         "wires": []
     },
     {
@@ -206,5 +206,103 @@
                 "b2d7c486f563fea8"
             ]
         ]
+    },
+    {
+        "id": "341562720c8aa81d",
+        "type": "mqtt in",
+        "z": "9968607a20fdc622",
+        "name": "",
+        "topic": "23CLC09N12/temperature",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "1b64c79f5eb19485",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 230,
+        "y": 340,
+        "wires": [
+            [
+                "a2736284d92dce44"
+            ]
+        ]
+    },
+    {
+        "id": "a2736284d92dce44",
+        "type": "ui_gauge",
+        "z": "9968607a20fdc622",
+        "name": "",
+        "group": "af10641eff56d860",
+        "order": 1,
+        "width": "0",
+        "height": "0",
+        "gtype": "gage",
+        "title": "gauge",
+        "label": "Nhiệt độ",
+        "format": "{{msg.payload.temperature}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "30",
+        "seg2": "60",
+        "diff": false,
+        "className": "",
+        "x": 510,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "a97c5ffd810859be",
+        "type": "mqtt in",
+        "z": "9968607a20fdc622",
+        "name": "",
+        "topic": "23CLC09N12/MQ2",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "1b64c79f5eb19485",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 460,
+        "wires": [
+            [
+                "59e006df4a554904"
+            ]
+        ]
+    },
+    {
+        "id": "59e006df4a554904",
+        "type": "ui_gauge",
+        "z": "9968607a20fdc622",
+        "name": "",
+        "group": "af10641eff56d860",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "MQ2",
+        "label": "Không khí ",
+        "format": "{{msg.payload.mq2}}",
+        "min": 0,
+        "max": "3.3",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 470,
+        "y": 460,
+        "wires": []
     }
 ]
