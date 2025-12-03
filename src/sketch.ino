@@ -106,6 +106,20 @@ void publishDHTData() {
   Serial.print("Humidity: "); Serial.println(humidity);
 }
 
+void publishMQ2Data() {
+  int mq2Value = analogRead(mq2_pin);
+  float ppm = mq2Value * (100000.0 / 4095.0);  // giả lập 0.1 -> 100000 PPM
+
+  if (isnan(mq2Value)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  Serial.print("MQ2 ADC: ");
+  Serial.println(mq2Value);
+
+  client.publish("23CLC09N12/MQ2/ppm", String(mq2Value).c_str());
+}
+
 void loop() {
   if(!client.connected()){
     mqttReconnect();
@@ -131,6 +145,7 @@ void loop() {
   if(millis() - lastMillis >= 2000) {
     lastMillis = millis();
     publishDHTData();
+    publishMQ2Data();
   }
   // delay(2000);
 }
