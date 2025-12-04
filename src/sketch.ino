@@ -29,7 +29,16 @@ bool toneBuzzer = false;
 bool isBuzzing = false;
 bool ledBlink = false;
 unsigned long lastMillis = 0;
-//bool switchMode = 0; //chưa dùng
+// bool switchMode = 0; //chưa dùng
+//   button
+bool mode = false;  // false: mode 1, true: mode 2
+bool modeSwitched = false;
+unsigned long buttonPressTime = 0;
+bool isPressing = false;
+const unsigned long holdTime = 3000;
+int lastButtonState = HIGH;
+int buttonState = HIGH;
+//
 bool isFire = false;
 
 float temperature = 0;
@@ -124,6 +133,29 @@ void mqttReconnect() {
   }
 }
 
+void handleButton() {
+  buttonState = digitalRead(button);
+
+  if (buttonState != lastButtonState) {
+    buttonPressTime = millis();
+    lastButtonState = buttonState;
+    modeSwitched = false;
+  }
+
+  if (buttonState == HIGH) {
+    if (!modeSwitched && (millis() - buttonPressTime >= holdTime)) {
+      mode = !mode;
+      modeSwitched = true;
+      buttonPressTime = millis();
+      Serial.print("Mode changed: ");
+      Serial.println(mode ? "Mode 2" : "Mode 1");
+      client.publish("23CLC09N12/mode", mode ? "2" : "1");
+    }
+  }
+  // LED
+  digitalWrite(greenLed, mode ? LOW : HIGH);
+  digitalWrite(redLed, mode ? HIGH : LOW);
+}
 
 void readPublishSensorsData() {
   temperature = dht.readTemperature();
@@ -150,6 +182,7 @@ void readPublishSensorsData() {
 }
 
 void loop() {
+  handleButton();
   if(!client.connected()){
     mqttReconnect();
   }
