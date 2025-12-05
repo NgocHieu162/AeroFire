@@ -29,7 +29,17 @@ bool toneBuzzer = false;
 bool isBuzzing = false;
 bool ledBlink = false;
 unsigned long lastMillis = 0;
-//bool switchMode = 0; //chưa dùng
+// bool switchMode = 0; //chưa dùng
+//   button
+bool mode = false;  // false: mode 1, true: mode 2
+bool modeSwitched = false;
+unsigned long buttonPressTime = 0;
+bool isPressing = false;
+bool buzzerManual = false;
+const unsigned long holdTime = 3000;
+int lastButtonState = HIGH;
+int buttonState = HIGH;
+//
 bool isFire = false;
 
 float temperature = 0;
@@ -74,6 +84,15 @@ void callback(char* topic, byte* message, unsigned int length) {
       ledBlink = false;
     }
   }
+  if (String(topic) == "23CLC09N12/buzzer") {
+    buzzerManual = true;  // web điều khiển
+    if (stMessage == "true") {
+        toneBuzzer = true;
+    }
+    else if (stMessage == "false") {
+        toneBuzzer = false;
+    }
+  }
 }
 
 void setup() {
@@ -113,7 +132,7 @@ void mqttReconnect() {
     Serial.print("Attempting MQTT connection...");
     if(client.connect("23CLC09N12")) {
       Serial.println("connected");
-      if(client.subscribe("23CLC09N12/Led")){
+      if(client.subscribe("23CLC09N12/Led") && client.subscribe("23CLC09N12/buzzer")){
         Serial.println("Kết nối thành công.");
       }
       //client.subscribe("23CLC09N12/LOCK");
@@ -124,6 +143,29 @@ void mqttReconnect() {
   }
 }
 
+void handleButton() {
+  buttonState = digitalRead(button);
+
+  if (buttonState != lastButtonState) {
+    buttonPressTime = millis();
+    lastButtonState = buttonState;
+    modeSwitched = false;
+  }
+
+  if (buttonState == HIGH) {
+    if (!modeSwitched && (millis() - buttonPressTime >= holdTime)) {
+      mode = !mode;
+      modeSwitched = true;
+      buttonPressTime = millis();
+      Serial.print("Mode changed: ");
+      Serial.println(mode ? "Mode 2" : "Mode 1");
+      client.publish("23CLC09N12/mode", mode ? "2" : "1");
+    }
+  }
+  // LED
+  digitalWrite(greenLed, mode ? LOW : HIGH);
+  digitalWrite(redLed, mode ? HIGH : LOW);
+}
 
 void readPublishSensorsData() {
   temperature = dht.readTemperature();
@@ -140,9 +182,10 @@ void readPublishSensorsData() {
     return;
   }
 
-  client.publish("23CLC09N12/temperature", String(temperature).c_str());
-  client.publish("23CLC09N12/humidity", String(humidity).c_str());
+  client.publish("23CLC09N12/temperature/c", String(temperature).c_str());
+  client.publish("23CLC09N12/humidity/%", String(humidity).c_str());
   client.publish("23CLC09N12/MQ2/ppm", String(mq2Value).c_str());
+  client.publish("23CLC09N12/fire", isFire ? "1" : "0");
 
   Serial.print("Temperature: "); Serial.println(temperature);
   Serial.print("Humidity: "); Serial.println(humidity);
@@ -150,6 +193,7 @@ void readPublishSensorsData() {
 }
 
 void loop() {
+  handleButton();
   if(!client.connected()){
     mqttReconnect();
   }
@@ -184,11 +228,9 @@ void loop() {
 
   if(isFire){
     ledBlink = true;
-    toneBuzzer = true;
   }
   else {
     ledBlink = false;
-    toneBuzzer = false;
   }
 
   if (ledBlink){ 
@@ -202,16 +244,10 @@ void loop() {
     digitalWrite(redLed, LOW);
   }
 
-  if (toneBuzzer){
-    if(!isBuzzing){ // chỉ bật buzzer nếu isBuzzing == false, nghĩa là buzzer chưa bật
-      tone(buzzer, 5000); 
-      isBuzzing = true;
-    }
-  }
-  else {
-    if (isBuzzing) { // chỉ tắt buzzer nếu isBuzzing == true, nghĩa là buzzer đang bật
+  //web -> buzzer
+  if (isFire || buzzerManual) {
+    tone(buzzer, 5000);
+  } else {
       noTone(buzzer);
-      isBuzzing = false; // Đánh dấu là đã tắt
-    }
   }
 }

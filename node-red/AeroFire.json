@@ -214,7 +214,8 @@
         "y": 200,
         "wires": [
             [
-                "b2d7c486f563fea8"
+                "b2d7c486f563fea8",
+                "7213e219a4990393"
             ]
         ]
     },
@@ -223,7 +224,7 @@
         "type": "mqtt in",
         "z": "9968607a20fdc622",
         "name": "",
-        "topic": "23CLC09N12/temperature",
+        "topic": "23CLC09N12/temperature/c",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "1b64c79f5eb19485",
@@ -231,7 +232,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 230,
+        "x": 240,
         "y": 340,
         "wires": [
             [
@@ -250,7 +251,7 @@
         "height": "0",
         "gtype": "gage",
         "title": "Nhiệt độ",
-        "label": "Nhiệt độ",
+        "label": "Đơn vị: ºC",
         "format": "{{msg.payload.temperature}}",
         "min": "0",
         "max": "100",
@@ -321,7 +322,7 @@
         "type": "mqtt in",
         "z": "9968607a20fdc622",
         "name": "",
-        "topic": "23CLC09N12/humidity",
+        "topic": "23CLC09N12/humidity/%",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "1b64c79f5eb19485",
@@ -329,7 +330,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 220,
+        "x": 230,
         "y": 400,
         "wires": [
             [
@@ -348,7 +349,7 @@
         "height": 0,
         "gtype": "gage",
         "title": "Độ ẩm",
-        "label": "units",
+        "label": "Đơn vị: %",
         "format": "{{msg.payload.humidity}}",
         "min": 0,
         "max": "100",
@@ -363,6 +364,24 @@
         "className": "",
         "x": 510,
         "y": 400,
+        "wires": []
+    },
+    {
+        "id": "7213e219a4990393",
+        "type": "mqtt out",
+        "z": "9968607a20fdc622",
+        "name": "",
+        "topic": "23CLC09N12/buzzer",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "1b64c79f5eb19485",
+        "x": 680,
+        "y": 260,
         "wires": []
     }
 ]
